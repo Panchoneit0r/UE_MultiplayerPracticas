@@ -43,8 +43,10 @@ class AMultiP2Character : public ACharacter
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Animation, meta = (AllowPrivateAccess = "true"))
 	class UAnimMontage* DeathAnimation;
-	
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	class UInputAction* RollAction;
+	
 
 public:
 
@@ -108,6 +110,21 @@ public:
 
 	bool bIsCarryingItem = false;
 	
+	UFUNCTION(BlueprintCallable)
+	void OpenLobby();
+
+    UFUNCTION(BlueprintCallable)
+    void CallClientTravel(const FString& Address);
+
+	UFUNCTION(BlueprintCallable)
+	void Death();
+
+	UFUNCTION(BlueprintCallable)
+	void Respawn(FVector position);
+
+	UFUNCTION(BlueprintCallable)
+	void RollLogic();
+	
 protected:  
 	UPROPERTY(EditDefaultsOnly, Category="Gameplay|Projectile")
 	TSubclassOf<class AThirdPersonMPProjectile> ProjectileClass;
@@ -119,6 +136,8 @@ protected:
 	/** If true, you are in the process of firing projectiles. */
 	bool bIsFiringWeapon;
 
+	bool isRolling;
+	
 	/** Function for beginning weapon fire.*/
 	UFUNCTION(BlueprintCallable, Category="Gameplay")
 	void StartFire();
@@ -129,9 +148,14 @@ protected:
 
 	/** Server function for spawning projectiles.*/
 	UFUNCTION(Server, Reliable)
-	void HandleFire();
+	void HandleFire(); 
 
+	UFUNCTION(BlueprintImplementableEvent)
+	void Roll();
+	
 	/** A timer handle used for providing the fire rate delay in-between spawns.*/
 	FTimerHandle FiringTimer;
+
+
 };
 

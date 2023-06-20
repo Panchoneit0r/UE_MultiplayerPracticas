@@ -42,11 +42,14 @@ void AMultiP2Character::OnHealthUpdate()
 		{
 			FString deathMessage = FString::Printf(TEXT("You have been killed."));
 			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, deathMessage);
-			UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+			APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
+			AActor::DisableInput(PlayerController);
+			/*UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 			if (AnimInstance != nullptr)
 			{
 				AnimInstance->Montage_Play(DeathAnimation, 2.0f);
-			}
+			}*/
 		}
 	}
 
@@ -119,6 +122,8 @@ AMultiP2Character::AMultiP2Character()
 	//Initialize fire rate
 	FireRate = 0.25f;
 	bIsFiringWeapon = false;
+
+
 }
 
 void AMultiP2Character::BeginPlay()
@@ -155,6 +160,50 @@ float AMultiP2Character::TakeDamage(float DamageTaken, FDamageEvent const& Damag
 
 }
 
+void AMultiP2Character::OpenLobby()
+{
+	UWorld* World = GetWorld();
+	if(World)
+	{
+		World->ServerTravel("/Game/ThirdPerson/Maps/ThirdPersonMap?listen");
+	}
+}
+
+void AMultiP2Character::CallClientTravel(const FString& Address)
+{
+	APlayerController* mainPlayer = GetGameInstance()->GetFirstLocalPlayerController();
+	if(mainPlayer)
+	{
+		mainPlayer->ClientTravel(Address, TRAVEL_Absolute);
+	}
+}
+
+void AMultiP2Character::Death()
+{
+	APlayerController* PlayerController = Cast<APlayerController>(Controller);
+	DisableInput(PlayerController);
+	bIsCarryingItem = false;
+	GetCapsuleComponent()->SetGenerateOverlapEvents(false);
+}
+
+void AMultiP2Character::Respawn(FVector position)
+{
+	APlayerController* PlayerController = Cast<APlayerController>(Controller);
+	EnableInput(PlayerController);
+	SetCurrentHealth(GetMaxHealth());
+	SetActorLocation(position);
+	GetCapsuleComponent()->SetGenerateOverlapEvents(true);
+}
+
+void AMultiP2Character::RollLogic()
+{
+		FVector Force;
+		Force.X = GetVelocity().X * 2.5f;
+		Force.Y = GetVelocity().Y * 2.5f;
+		Force.Z = 0;
+		LaunchCharacter(Force, true, true);
+}
+
 void AMultiP2Character::StartFire()
 {
 	if(bIsCarryingItem)
@@ -172,7 +221,10 @@ void AMultiP2Character::StartFire()
 void AMultiP2Character::StopFire()
 {
 	bIsFiringWeapon = false;
+	
 }
+
+
 
 void AMultiP2Character::HandleFire_Implementation()
 {
@@ -206,6 +258,8 @@ void AMultiP2Character::SetupPlayerInputComponent(class UInputComponent* PlayerI
 
 		//Fire
 		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Triggered, this, &AMultiP2Character::StartFire);
+
+		EnhancedInputComponent->BindAction(RollAction, ETriggerEvent::Triggered, this, &AMultiP2Character::Roll);
 	}
 
 }
